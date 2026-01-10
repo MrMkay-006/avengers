@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Secure Session • Avengers Protocol</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: radial-gradient(circle at top, #0b1230, #02030a 70%);
+      color: #e6e9ff;
+      overflow-x: hidden;
+    }
+
+    /* HUD GRID BACKGROUND */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,234,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,234,.05) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+      animation: gridMove 20s linear infinite;
+    }
+    @keyframes gridMove {
+      from { background-position: 0 0, 0 0; }
+      to { background-position: 400px 400px, 400px 400px; }
+    }
+
+    /* GLITCH INTRO */
+    .glitch-screen {
+      position: fixed;
+      inset: 0;
+      background: black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      animation: glitchFlash .15s infinite;
+    }
+    .glitch-text {
+      color: #00ffea;
+      font-family: monospace;
+      font-size: 1.1rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      animation: textGlitch 1s infinite;
+    }
+    @keyframes glitchFlash {
+      0%{opacity:1} 50%{opacity:.8} 100%{opacity:1}
+    }
+    @keyframes textGlitch {
+      0%{text-shadow:2px 0 red,-2px 0 cyan}
+      50%{text-shadow:-2px 0 red,2px 0 cyan}
+      100%{text-shadow:2px 0 red,-2px 0 cyan}
+    }
+
+    .container { max-width: 1100px; margin: auto; padding: 20px; position: relative; z-index: 1; }
+
+    .card {
+      background: rgba(10,15,40,.85);
+      border: 1px solid rgba(0,255,234,.2);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 0 40px rgba(0,255,234,.15);
+      margin-bottom: 24px;
+      animation: cardIn .8s ease forwards;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(30px) scale(.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .btn {
+      background: linear-gradient(90deg, #e10600, #ff4b2b);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 40px;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(225,6,0,.6);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .btn:hover { transform: scale(1.05); box-shadow: 0 0 35px rgba(225,6,0,.9); }
+
+    /* LOADER */
+    .loader {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      border: 3px solid rgba(0,255,234,.2);
+      border-top-color: #00ffea;
+      animation: spin 1s linear infinite, pulse 2s ease-in-out infinite;
+      margin: 30px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 10px #00ffea} 50%{box-shadow:0 0 40px #00ffea} }
+
+    .avengers svg {
+      animation: logoPulse 3s infinite;
+    }
+    @keyframes logoPulse {
+      0%,100%{transform:scale(1);filter:drop-shadow(0 0 10px #e10600)}
+      50%{transform:scale(1.1);filter:drop-shadow(0 0 30px #e10600)}
+    }
+
+    .messages .card {
+      animation: slideUp 1s ease forwards;
+    }
+    @keyframes slideUp {
+      from { opacity:0; transform:translateY(40px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+
+    #tonyText::after {
+      content: "▌";
+      animation: blink 1s infinite;
+    }
+    @keyframes blink { 50%{opacity:0} }
+
+    @media (max-width:600px){
+      .card img{max-height:240px}
+    }
+
+    .msg-buttons{
+      display:flex;
+      justify-content:space-around;
+      gap:16px;
+      flex-wrap:wrap;
+    }
+    .msg-btn{
+      width:90px;
+      height:90px;
+      border-radius:50%;
+      border:2px solid rgba(0,255,234,.5);
+      background:rgba(0,0,0,.4);
+      box-shadow:0 0 25px rgba(0,255,234,.6);
+      cursor:pointer;
+      transition:transform .2s, box-shadow .2s;
+      padding:0;
+    }
+    .msg-btn:hover{
+      transform:scale(1.1);
+      box-shadow:0 0 40px rgba(0,255,234,1);
+    }
+    .msg-btn img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      border-radius:50%;
+    }
+
+    .popup{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.7);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      animation:fadeIn .3s ease;
+    }
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+    .popup-card{
+      background:rgba(10,15,40,.95);
+      border:1px solid rgba(0,255,234,.4);
+      border-radius:20px;
+      padding:30px;
+      max-width:400px;
+      width:90%;
+      box-shadow:0 0 40px rgba(0,255,234,.6);
+      animation:popIn .4s ease;
+    }
+    @keyframes popIn{from{transform:scale(.8)}to{transform:scale(1)}}
+    
+  </style>
+</head>
+<body>
+
+<!-- AUDIO -->
+<audio id="glitchSound" preload="auto" src="https://assets.mixkit.co/sfx/preview/mixkit-digital-glitch-2586.mp3"></audio>
+<audio id="beepSound" preload="auto" src="https://assets.mixkit.co/sfx/preview/mixkit-tech-click-1126.mp3"></audio>
+<audio id="bgMusic" preload="auto" loop src="https://assets.mixkit.co/music/preview/mixkit-heroic-avengers-style-theme-499.mp3"></audio>
+
+<!-- GLITCH INTRO -->
+<div class="glitch-screen" id="glitch">
+  <div class="glitch-text">Unauthorized access detected... syncing device...</div>
+</div>
+
+<!-- STEP 1: DETAILS CONFIRMATION -->
+<div class="container" id="step1" style="display:none">
+  <div class="card">
+    <img src="images/chain1.jpg" width="400px" height="400px" style="border-radius: 20px;" alt="Nikita" />
+    <h2>Nikita Wambui</h2>
+    <p><strong>Location:</strong> Kimana, Kajiado, Kenya</p>
+    <p>Confirm this is your details to proceed.</p>
+    <button class="btn" onclick="confirmDetails()">Confirm</button>
+  </div>
+</div>
+
+<!-- STEP 2: LOADING -->
+<div class="container" id="step2" style="display:none; text-align:center">
+  <div class="card">
+    <div class="loader"></div>
+    <p class="log">Logging into the system... verifying identity...</p>
+  </div>
+</div>
+
+<!-- STEP 3: FINAL -->
+<div class="container" id="step3" style="display:none">
+  <div class="avengers">
+    <!-- Avengers A (inline SVG) -->
+    <svg viewBox="0 0 100 100" aria-label="Avengers">
+      <path d="M50 5C25 5 5 25 5 50s20 45 45 45 45-20 45-45S75 5 50 5zm0 8c20.4 0 37 16.6 37 37S70.4 87 50 87 13 70.4 13 50 29.6 13 50 13zm-3 18h12l12 38h-9l-3-9H44l-3 9h-9l15-38zm-1 22h10l-5-14-5 14z"/>
+    </svg>
+  </div>
+
+  <div class="card hero-card">
+    <img src="images/chain1.jpg" width="200px" height="200px" style="border-radius: 40px;" alt="Nikita" />
+    <h2>Nikita Wambui</h2>
+    <p>Kimana, Kajiado, Kenya</p>
+  </div>
+
+  <div class="messages">
+  <div class="card">
+    <h3 style="text-align:center;margin-bottom:20px;">📨 Messages</h3>
+
+    <div class="msg-buttons">
+      <button class="msg-btn" onclick="openMsg('steve')">
+        <img src="images/steve.jpg" alt="Steve Rogers" />
+      </button>
+      <button class="msg-btn" onclick="openMsg('loki')">
+        <img src="images/loki.jpg" alt="Loki" />
+      </button>
+      <button class="msg-btn" onclick="openMsg('tony')">
+        <img src="images/tony.jpg" alt="Tony Stark" />
+      </button>
+      <button class="msg-btn" onclick="openMsg('mkay')">
+        <img src="images/mkay.jpg" alt="Mr Mkay" />
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- POPUP -->
+<div class="popup" id="popup">
+  <div class="popup-card">
+    <h3 id="popupName"></h3>
+    <p id="popupText"></p>
+    <button class="btn" onclick="closeMsg()">Close</button>
+  </div>
+</div>
+
+      <!-- <div class="msg">
+        <img src="https://via.placeholder.com/80" alt="Loki" />
+        <div>
+          <strong>Loki</strong>
+          <p>You are far more interesting than you realize, Nikita. Chaos favors the bold.</p>
+        </div>
+      </div> -->
+
+      <!-- <div class="msg">
+        <img src="https://via.placeholder.com/80" alt="Tony Stark" />
+        <div>
+          <strong>Tony Stark</strong>
+          <p id="tonyText"></p>
+        </div>
+      </div> -->
+
+      <!-- <div class="msg">
+        <img src="https://via.placeholder.com/80" alt="Mr Mkay" />
+        <div>
+          <strong>Mr Mkay</strong>
+          <p><em>I love you 3000 ❤️</em></p>
+        </div>
+      </div> -->
+    </div>
+  </div>
+</div>
+
+<script>
+  const glitchSound = document.getElementById('glitchSound');
+  const beepSound = document.getElementById('beepSound');
+  const bgMusic = document.getElementById('bgMusic');
+
+  // Intro glitch
+  window.addEventListener('load', () => {
+    try { glitchSound.play(); } catch (e) {}
+  });
+
+  setTimeout(() => {
+    document.getElementById('glitch').style.display = 'none';
+    document.getElementById('step1').style.display = 'block';
+  }, 3000);
+
+  function confirmDetails() {
+    try { beepSound.play(); } catch (e) {}
+
+    document.getElementById('step1').style.display = 'none';
+    document.getElementById('step2').style.display = 'block';
+
+    setTimeout(() => {
+      document.getElementById('step2').style.display = 'none';
+      document.getElementById('step3').style.display = 'block';
+
+      try {
+        bgMusic.volume = 0.4;
+        bgMusic.play();
+      } catch (e) {}
+
+      typeTony();
+    }, 10000);
+  }
+
+  function typeTony() {
+    const text = "Hey Nikita, I think I got that right. You are wondering why you are here. Let me fill you in. Someone who cares for you wanted to pass this message to you... wait, he stole my line. Otherwise, let’s continue. He said I love you 3000. This message was meant just for you. Bye.";
+    const el = document.getElementById('popupText');
+    el.textContent = "";
+    let i = 0;
+    const speed = 35;
+
+    const typer = setInterval(() => {
+      el.textContent += text.charAt(i);
+      i++;
+      if (i >= text.length) clearInterval(typer);
+    }, speed);
+  }
+
+  function openMsg(who){
+    const popup = document.getElementById('popup');
+    const name = document.getElementById('popupName');
+    const text = document.getElementById('popupText');
+
+    popup.style.display = 'flex';
+    text.textContent = '';
+
+    if(who==='steve'){
+      name.textContent = 'Steve Rogers';
+      text.textContent = 'Sometimes the world needs people who stand strong, even when they don’t know how powerful they are.';
+    }
+    if(who==='loki'){
+      name.textContent = 'Loki';
+      text.textContent = 'You are far more interesting than you realize, Nikita. Chaos favors the bold.';
+    }
+    if(who==='tony'){
+      name.textContent = 'Tony Stark';
+      typeTony();
+    }
+    if(who==='mkay'){
+      name.textContent = 'Mr Mkay';
+      text.innerHTML = '<strong>I love you 3000 ❤️</strong>';
+    }
+  }
+
+  function closeMsg(){
+    document.getElementById('popup').style.display='none';
+  }
+</script>
+
+</body>
+</html>
